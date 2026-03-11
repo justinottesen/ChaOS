@@ -2,6 +2,9 @@
 
 I am building an operating system. I have no idea what I am doing.
 
+I highly doubt anyone would find this useful either as a guide or to use as an
+OS, but I am making it public so I am held accountable to actually work on it.
+
 ## Design Principles
 
 ### Learning Experience
@@ -18,6 +21,13 @@ The entire system will be built using slices (fat pointers). No null-terminated
 strings (hooray!). All pointers will have an associated length. This should help
 simplify interfaces and reduce the likelihood of bugs. This is the main design
 decision that will differentiate this OS from the rest.
+
+## Development Log
+
+I have a bad habit of hopping from project to project and never really making
+progress on any one of them. To try and combat that, I am going to document
+my progress in the `DEVELOPMENT_LOG.md` document. These are really more personal notes that
+I am making public, rather than an organized and polished document.
 
 ## Resources
 
