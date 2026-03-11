@@ -11,7 +11,8 @@ start:
     mov ds, ax
     mov es, ax
 
-    mov si, HELLO_WORLD_STRING      ; Print the hello world string
+    mov si, hello_world_string
+    mov cx, hello_world_length
     call print_string
 
     jmp $                           ; Jump to current address
@@ -20,26 +21,21 @@ start:
 ; Prints a string to the screen
 ;
 ; Params:
-;   - ds:si points to the string
+;   - ds:si = address of the string
+;   - cx    = length of the string
 ;
 print_string:
     push si
-    push ax
-    push bx
 
     mov ah, 0x0E                ; Set teletype mode
 .loop:
+    jcxz .done                  ; Check if length counter is 0
     lodsb                       ; Loads the next character into al
-    or al, al                   ; Check if we are at null terminator
-    jz .done                    ; Jump to done if so
-
     int 0x10                    ; Interrupt to print a char
-
+    dec cx                      ; Decrements length counter in cx
     jmp .loop
 
 .done:
-    pop bx
-    pop ax
     pop si
     ret
 
@@ -47,8 +43,8 @@ print_string:
 ; Program Data
 ;
 
-HELLO_WORLD_STRING:
-    db "Hello, world!", 0       ; Null-terminated so we know when the string ends
+hello_world_string: db "Hello, world!"
+hello_world_length: equ $ - hello_world_string
 
 ;
 ; Padding and magic BIOS number
