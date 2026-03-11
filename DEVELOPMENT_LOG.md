@@ -166,7 +166,7 @@ That takes us to now, when I am starting this project. This will definitely take
 years of work. I'm not sure how much time I will dedicate to it, but I hope to
 consistently work on it and eventually have something worth looking at.
 
-## 2026/3/10
+## 2026-3-10
 
 ### Day 1 Progress
 
