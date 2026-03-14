@@ -189,3 +189,26 @@ All jokes aside, day 1 was successful. I got something to run.
 I need to make the jump from 16-bit real mode to 32-bit protected mode. Then,
 eventually, I'll get into 64-bit long mode and to the kernel.
 
+## 2026-3-14
+
+### Booting the Kernel
+
+Again, a lot more readig since the last update. Managed to get the second stage
+bootloader to set up the GDT and boot the kernel in 32-bit real mode. At the
+moment, the kernel is just a stub asm that prints OK in bright green.
+
+### Debugging
+
+Had my first really annoying bug to fix, it was in loading the kernel from disk.
+A register was being overwritten and loading the second stage bootloader again
+instead of the kernel. This obviously didn't work for a number of reasons.
+
+### Next Steps
+
+I am close to being able to write C, now that I am in kernel land I can start
+doing that. I eventually should check if this is compatible with GRUB as well.
+My bootloader works but I'd want to be able to dual boot to test it and GRUB
+will make that easier.
+
+Or I could make the bootloader more sophistocated, but I think going with GRUB
+is probably smarter and I can focus on the kernel itself.
