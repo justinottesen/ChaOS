@@ -1,3 +1,16 @@
+[bits 16]
+
+;
+; Prints a message and halts forever
+;
+; Params:
+;   ds:si = address of the message
+;   cx    = length of the message
+;
+fatal_error:
+    call print_string
+    jmp $
+
 ;
 ; Prints a string to the screen
 ;
