@@ -30,4 +30,4 @@ protected_mode_entry:
 
     mov esp, 0x7C00                 ; stack just below the bootloader, grows downward
 
-    jmp dword 0x0008:0x10000        ; absolute far jump to kernel entry point
+    jmp dword 0x10000        ; absolute far jump to kernel entry point

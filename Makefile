@@ -1,33 +1,75 @@
-.PHONY: all run clean
+.PHONY: all run run-debug clean
 
-SRC_DIR=src
-BUILD_DIR=build
+# --- Paths ---
 
-all: ${BUILD_DIR}/disk.img
+SRC_DIR   := src
+BUILD_DIR := build
 
-${BUILD_DIR}/disk.img: ${BUILD_DIR}/stage1.bin ${BUILD_DIR}/stage2.bin ${BUILD_DIR}/kernel.bin
-	cat ${BUILD_DIR}/stage1.bin ${BUILD_DIR}/stage2.bin ${BUILD_DIR}/kernel.bin > ${BUILD_DIR}/disk.img
+BOOT_DIR   := boot
+KERNEL_DIR := kernel
 
-LIB_ASM=$(wildcard ${SRC_DIR}/lib/*.asm)
+BOOT_SRC_DIR   := $(SRC_DIR)/$(BOOT_DIR)
+KERNEL_SRC_DIR := $(SRC_DIR)/$(KERNEL_DIR)
 
-${BUILD_DIR}/stage1.bin: ${BUILD_DIR} ${SRC_DIR}/boot/stage1.asm ${LIB_ASM}
-	nasm -I ${SRC_DIR}/boot ${SRC_DIR}/boot/stage1.asm -f bin -o ${BUILD_DIR}/stage1.bin
+BOOT_BUILD_DIR   := $(BUILD_DIR)/$(BOOT_DIR)
+KERNEL_BUILD_DIR := $(BUILD_DIR)/$(KERNEL_DIR)
 
-${BUILD_DIR}/stage2.bin: ${BUILD_DIR} ${SRC_DIR}/boot/stage2.asm ${LIB_ASM}
-	nasm -I ${SRC_DIR}/boot ${SRC_DIR}/boot/stage2.asm -f bin -o ${BUILD_DIR}/stage2.bin
+# --- Tools ---
 
-${BUILD_DIR}/kernel.bin: ${BUILD_DIR} ${SRC_DIR}/kernel/entry.asm
-	nasm ${SRC_DIR}/kernel/entry.asm -f bin -o ${BUILD_DIR}/kernel.bin
+NASM := nasm
+QEMU := qemu-system-x86_64
 
-${BUILD_DIR}:
-	mkdir -p ${BUILD_DIR}
+# --- Flags ---
 
-run: ${BUILD_DIR}/disk.img
-	qemu-system-x86_64 -drive format=raw,file=${BUILD_DIR}/disk.img -no-reboot
+BOOT_NASMFLAGS := -I $(BOOT_SRC_DIR) -f bin
+KERNEL_NASMFLAGS := -f bin
+QEMUFLAGS := -drive format=raw,file=$(BUILD_DIR)/ChaOS.img -no-reboot
 
-run-debug: ${BUILD_DIR}/disk.img
-	-qemu-system-x86_64 -drive format=raw,file=${BUILD_DIR}/disk.img -no-reboot -d int,cpu_reset -D ${BUILD_DIR}/qemu.log
-	@cat ${BUILD_DIR}/qemu.log
+# --- Files ---
+
+IMAGE := $(BUILD_DIR)/ChaOS.img
+
+STAGE1_SRC := $(BOOT_SRC_DIR)/stage1.asm
+STAGE2_SRC := $(BOOT_SRC_DIR)/stage2.asm
+KERNEL_SRC := $(KERNEL_SRC_DIR)/entry.asm
+
+STAGE1_BIN := $(BOOT_BUILD_DIR)/stage1.bin
+STAGE2_BIN := $(BOOT_BUILD_DIR)/stage2.bin
+KERNEL_BIN := $(KERNEL_BUILD_DIR)/kernel.bin
+
+BOOT_LIB_ASM := $(wildcard $(BOOT_SRC_DIR)/lib/*.asm)
+
+# --- Main targets ---
+
+all: $(IMAGE)
+
+run: $(IMAGE)
+	$(QEMU) $(QEMUFLAGS)
+
+run-debug: $(IMAGE)
+	-$(QEMU) $(QEMUFLAGS) -d int,cpu_reset -D $(BUILD_DIR)/qemu.log
+	@cat $(BUILD_DIR)/qemu.log
 
 clean:
-	rm -rf ${BUILD_DIR}
+	rm -rf $(BUILD_DIR)
+
+# --- Image build ---
+
+$(IMAGE): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) | $(BUILD_DIR)
+	cat $+ > $@
+
+# --- Binary builds ---
+
+$(STAGE1_BIN): $(STAGE1_SRC) $(BOOT_LIB_ASM) | $(BOOT_BUILD_DIR)
+	$(NASM) $(BOOT_NASMFLAGS) $< -o $@
+
+$(STAGE2_BIN): $(STAGE2_SRC) $(BOOT_LIB_ASM) | $(BOOT_BUILD_DIR)
+	$(NASM) $(BOOT_NASMFLAGS) $< -o $@
+
+$(KERNEL_BIN): $(KERNEL_SRC) | $(KERNEL_BUILD_DIR)
+	$(NASM) $(KERNEL_NASMFLAGS) $< -o $@
+
+# --- Directory creation ---
+
+$(BUILD_DIR) $(BOOT_BUILD_DIR) $(KERNEL_BUILD_DIR):
+	mkdir -p $@
