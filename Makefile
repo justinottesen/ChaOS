@@ -11,13 +11,13 @@ ${BUILD_DIR}/disk.img: ${BUILD_DIR}/stage1.bin ${BUILD_DIR}/stage2.bin ${BUILD_D
 LIB_ASM=$(wildcard ${SRC_DIR}/lib/*.asm)
 
 ${BUILD_DIR}/stage1.bin: ${BUILD_DIR} ${SRC_DIR}/boot/stage1.asm ${LIB_ASM}
-	nasm -I ${SRC_DIR} ${SRC_DIR}/boot/stage1.asm -f bin -o ${BUILD_DIR}/stage1.bin
+	nasm -I ${SRC_DIR}/boot ${SRC_DIR}/boot/stage1.asm -f bin -o ${BUILD_DIR}/stage1.bin
 
 ${BUILD_DIR}/stage2.bin: ${BUILD_DIR} ${SRC_DIR}/boot/stage2.asm ${LIB_ASM}
-	nasm -I ${SRC_DIR} ${SRC_DIR}/boot/stage2.asm -f bin -o ${BUILD_DIR}/stage2.bin
+	nasm -I ${SRC_DIR}/boot ${SRC_DIR}/boot/stage2.asm -f bin -o ${BUILD_DIR}/stage2.bin
 
 ${BUILD_DIR}/kernel.bin: ${BUILD_DIR} ${SRC_DIR}/kernel/entry.asm
-	nasm -I ${SRC_DIR} ${SRC_DIR}/kernel/entry.asm -f bin -o ${BUILD_DIR}/kernel.bin
+	nasm ${SRC_DIR}/kernel/entry.asm -f bin -o ${BUILD_DIR}/kernel.bin
 
 ${BUILD_DIR}:
 	mkdir -p ${BUILD_DIR}
