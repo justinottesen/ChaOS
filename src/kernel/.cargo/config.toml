@@ -1,0 +1,7 @@
+[unstable]
+build-std = ["core"]
+build-std-features = []
+json-target-spec = true
+
+[build]
+target = "i686-none.json"

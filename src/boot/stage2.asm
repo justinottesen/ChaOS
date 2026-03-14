@@ -40,7 +40,7 @@ start:
     mov ax, 0x1000
     mov es, ax
     mov ax, 3                   ; LBA sector 3 (stage2 occupies sectors 1-2)
-    mov cl, 1                   ; 1 sector
+    mov cl, 64                  ; 64 sectors (32KB) - enough for the Rust kernel
     mov bx, 0                   ; ES:BX = 0x1000:0 = physical 0x10000
     call disk_read
     xor ax, ax
