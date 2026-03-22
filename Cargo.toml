@@ -1,0 +1,10 @@
+[workspace]
+members = ["kernel"]
+resolver = "2"
+
+# Unwinding requires OS support we don't have. Abort for all workspace members.
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
