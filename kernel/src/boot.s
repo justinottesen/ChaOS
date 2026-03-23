@@ -20,10 +20,14 @@ _start:
     cli
     mov esp, OFFSET __boot_stack_top
 
-    # Save the multiboot2 info pointer. GRUB puts it in ebx, and we want it
-    # to survive into 64-bit mode so we can pass it to kernel_main.
-    # edi is callee-saved and we won't touch it again until the call.
+    # Save the two values GRUB hands us. Both edi and esi are callee-saved in
+    # the 32-bit ABI, so they survive through setup_page_tables and the rest
+    # of the transition.
+    #
+    #   edi = multiboot2 info address (from ebx) → kernel_main arg 1 (rdi)
+    #   esi = bootloader magic        (from eax) → kernel_main arg 2 (rsi)
     mov edi, ebx
+    mov esi, eax
 
     call setup_page_tables
 
@@ -105,7 +109,7 @@ setup_page_tables:
     ret
 
 
-# ─── 64-bit code ─────────────────────────────────────────────────────────────
+# --- 64-bit code -------------------------------------------------------------
 
 .code64
 __long_mode_entry:
@@ -120,7 +124,11 @@ __long_mode_entry:
     mov fs, ax
     mov gs, ax
 
-    # rdi = multiboot2 info address (edi was preserved through the transition)
+    # Writing to a 32-bit register in 64-bit mode zero-extends to the full
+    # 64-bit register. Do this explicitly so kernel_main receives clean u64
+    # values regardless of what was in the upper 32 bits before long mode.
+    mov edi, edi               # zero-extend info address → rdi (arg 1)
+    mov esi, esi               # zero-extend magic        → rsi (arg 2)
     call kernel_main
 
     # kernel_main is diverging and should never return. Halt defensively.
@@ -129,7 +137,7 @@ __long_mode_entry:
     jmp 2b
 
 
-# ─── Global Descriptor Table ─────────────────────────────────────────────────
+# --- Global Descriptor Table -------------------------------------------------
 #
 # The GDT must contain a 64-bit code segment with the L (long mode) bit set.
 # In 64-bit mode the CPU ignores most segment fields (base, limit, most flags),
@@ -157,7 +165,7 @@ __gdt_descriptor:
     .long __gdt                    # base  (32-bit address, loaded before paging)
 
 
-# ─── BSS ─────────────────────────────────────────────────────────────────────
+# --- BSS ---------------------------------------------------------------------
 
 .section .bss
 
