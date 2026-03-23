@@ -172,12 +172,17 @@ __gdt_descriptor:
 # Page tables must be 4 KiB aligned. Placing them in .bss means they are
 # zero-initialised by the bootloader, so we only need to write the entries
 # we actually use.
+.global __pml4
+.global __pdpt
+.global __pd
 .align 4096
 __pml4: .space 4096
 __pdpt: .space 4096
 __pd:   .space 4096
 
 # Boot stack (16 KiB)
+.global __boot_stack_bottom
+.global __boot_stack_top
 .align 16
 __boot_stack_bottom: .space 16384
 __boot_stack_top:

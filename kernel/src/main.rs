@@ -1,16 +1,26 @@
 #![no_std]
 #![no_main]
 
+extern crate alloc;
+
 use core::arch::global_asm;
 use core::panic::PanicInfo;
 
+mod allocator;
+mod kernel_layout;
 mod mem;
 mod multiboot2;
+mod sync;
 
+use allocator::BumpAllocator;
+use kernel_layout::PhysMemoryLayout;
 use mem::{PhysMemoryMap, PhysRegion};
 use multiboot2::{BootInfo, MemoryKind};
 
 global_asm!(include_str!("boot.s"));
+
+#[global_allocator]
+static ALLOCATOR: BumpAllocator = BumpAllocator::new();
 
 // --- Kernel Main -------------------------------------------------------------
 
@@ -19,6 +29,12 @@ pub extern "C" fn kernel_main(multiboot_info: u64, multiboot_magic: u32) -> ! {
     // Safety: multiboot_info is the bootloader-provided pointer forwarded
     // untouched from EBX via boot.s; multiboot_magic was in EAX.
     let boot_info = unsafe { BootInfo::new(multiboot_info, multiboot_magic) };
+    let layout = PhysMemoryLayout::new(&boot_info);
+
+    // Safety: layout.heap is derived from the bootloader memory map with all
+    // fixed kernel regions subtracted, guaranteeing no overlap with any other
+    // live allocation or data structure.
+    unsafe { ALLOCATOR.init(layout.heap.start, layout.heap.size()) };
 
     let phys_map = PhysMemoryMap::new(
         boot_info
@@ -122,5 +138,11 @@ impl<'a> VgaWriter<'a> {
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    // Write "!PANIC!" in white-on-red directly to the VGA buffer, bypassing
+    // the VGA driver entirely. This works even before the driver is set up.
+    let vga = 0xb8000 as *mut u16;
+    for (i, &b) in b"!PANIC!".iter().enumerate() {
+        unsafe { vga.add(i).write_volatile(0x4f00 | b as u16) };
+    }
     loop {}
 }

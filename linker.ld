@@ -9,6 +9,7 @@ SECTIONS
      * address for a kernel loaded by a multiboot2 bootloader.
      */
     . = 1M;
+    __kernel_start = .;
 
     /*
      * The multiboot2 spec requires the header to appear within the first
@@ -34,6 +35,8 @@ SECTIONS
         *(COMMON)
         *(.bss .bss.*)
     }
+
+    __kernel_end = .;
 
     /* Drop metadata sections that the kernel doesn't need at runtime. */
     /DISCARD/ : { *(.eh_frame) *(.note .note.*) }

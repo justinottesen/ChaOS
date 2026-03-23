@@ -2,7 +2,7 @@
 # build-std compiles the core library from source for our target.
 # We need this because x86_64-unknown-none has no pre-built standard library.
 # "compiler-builtins-mem" provides memcpy/memset/etc. since we have no libc.
-build-std = ["core"]
+build-std = ["core", "alloc"]
 build-std-features = ["compiler-builtins-mem"]
 
 [build]

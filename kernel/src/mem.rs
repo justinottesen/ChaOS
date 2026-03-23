@@ -113,6 +113,14 @@ impl<T: Copy> PhysRegion<T> {
     }
 }
 
+// --- Utilities ---------------------------------------------------------------
+
+/// Round `addr` up to the nearest multiple of `align`.
+/// `align` must be a power of two.
+pub(crate) fn align_up(addr: usize, align: usize) -> usize {
+    (addr + align - 1) & !(align - 1)
+}
+
 // --- PhysMemoryMap -----------------------------------------------------------
 
 /// Maximum number of physical memory regions the map can hold.
