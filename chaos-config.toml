@@ -1,0 +1,23 @@
+# ChaOS build configuration.
+#
+# This is the single source of truth for how images are built and run.
+# xtask reads this file (resolved relative to the repo, not your cwd).
+# Override with `--config <path>` to use an alternate file.
+#
+# Any field omitted here falls back to its built-in default, so this
+# file can be as sparse as you like.
+
+[build]
+# Which boot target to build. One of: "x86-bios"
+target = "x86-bios"
+
+# Cargo profile for the kernel build. "debug" or "release".
+profile = "debug"
+
+[qemu]
+# Memory handed to the guest.
+memory = "512M"
+# Number of vCPUs.
+cpus = 1
+# Where to route the guest serial port. "stdio" puts it in your terminal.
+serial = "stdio"
