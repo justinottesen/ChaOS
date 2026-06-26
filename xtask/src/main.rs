@@ -2,6 +2,7 @@ mod cli;
 mod config;
 mod pipelines;
 mod tools;
+mod memory;
 
 use clap::Parser;
 

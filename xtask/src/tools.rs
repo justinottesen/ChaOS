@@ -1,22 +1,31 @@
 //! Thin wrappers over the external tools xtask drives. Each runs a tool
 //! as a subprocess and fails loudly if the tool is missing or errors.
 
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use std::process::Command;
 
 /// Assemble a flat binary with NASM (`-f bin`, no linker needed).
-pub fn nasm(src: &Path, out: &Path) {
-    run(
-        "nasm",
-        &[
-            OsStr::new("-f"),
-            OsStr::new("bin"),
-            src.as_os_str(),
-            OsStr::new("-o"),
-            out.as_os_str(),
-        ],
-    );
+pub fn nasm(src: &Path, out: &Path, defines: &[(&str, u64)]) {
+    let mut args: Vec<OsString> = vec![
+        OsString::from("-f"),
+        OsString::from("bin"),
+        src.into(),
+        OsString::from("-o"),
+        out.into(),
+    ];
+    for (name, value) in defines {
+        args.push(format!("-D{name}={value}").into());
+    }
+    // Resolve `%include` paths relative to the source file's directory.
+    // NASM concatenates the -i prefix literally, so the trailing separator matters.
+    if let Some(dir) = src.parent() {
+        let mut inc = OsString::from("-i");
+        inc.push(dir);
+        inc.push("/");
+        args.push(inc);
+    }
+    run("nasm", &args);
 }
 
 /// Boot a raw disk image in QEMU.
@@ -26,20 +35,20 @@ pub fn qemu_bios(image: &Path, memory: &str, cpus: u32, serial: &str) {
     run(
         "qemu-system-x86_64",
         &[
-            OsStr::new("-drive"),
-            OsStr::new(&drive),
-            OsStr::new("-m"),
-            OsStr::new(memory),
-            OsStr::new("-smp"),
-            OsStr::new(&smp),
-            OsStr::new("-serial"),
-            OsStr::new(serial),
+            "-drive",
+            drive.as_str(),
+            "-m",
+            memory,
+            "-smp",
+            smp.as_str(),
+            "-serial",
+            serial,
         ],
     );
 }
 
 /// Run a command, inheriting stdio, and panic with context on failure.
-fn run(program: &str, args: &[&OsStr]) {
+fn run(program: &str, args: &[impl AsRef<OsStr>]) {
     let status = Command::new(program)
         .args(args)
         .status()
