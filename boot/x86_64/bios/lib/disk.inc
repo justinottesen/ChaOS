@@ -1,5 +1,5 @@
 ;
-; (EDD with CHS fallback)
+; Disk read functions (EDD with CHS fallback)
 ;
 
 %ifndef __DISK_INC

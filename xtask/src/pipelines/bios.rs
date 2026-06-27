@@ -114,17 +114,25 @@ impl Pipeline for Bios {
         };
 
         // Register initial memory layout
-        let _bios_reserved_low = claim("Interrupt Table & BIOS Data", 0, 0x4FF);
+        let _bios_reserved_low = claim("Interrupt Table & BIOS Data", 0, 0x500);
         let _boot_stage1 = claim("Boot sector", BOOT_ADDR, SECTOR_SIZE as u64);
-        let _bios_reserved_high = claim("Video display & BIOS data", 0x80000, 0xFFFFF - 0x80000);
+        let _bios_reserved_high = claim("Video display & BIOS data", 0x80000, 0x100000 - 0x80000);
 
-        // Mimic memory layout during execution
-        let _stack = claim("Stack", 0x500, BOOT_ADDR - 0x500);
+        // Set up stack & load stage 2
+        let _stack = claim("Stack", 0x501, BOOT_ADDR - 0x501);
         let _stage2 = claim(
             "Stage 2",
             BOOT_ADDR + SECTOR_SIZE as u64,
             stage2_size.next_multiple_of(SECTOR_SIZE) as u64,
         );
+
+        // Enable the A20 line
+        memory_validator.set_max_address(0x10FFF0);
+        {
+            // Temporary addresses used to check if A20 is enabled
+            let check_a20_low = claim("Check A20 (wraparound)", 0x500, 1);
+            let check_a20_low = claim("Check A20 (high)", 0x100500, 1);
+        }
     }
 
     fn run(&self, config: &Config) {

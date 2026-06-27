@@ -23,31 +23,46 @@
 [bits 16]
 [org STAGE2_LOAD_ADDR]
 
-;
-; Defines some useful macros in defining strings for printing
-;
 %include "lib/print_macros.inc"
 
 ;
 ; Our entry point, jumped to from stage 1
 ;
 stage2_16:
-    PRINT msg_stage2
-;
-; This disables interrupts and infinitely loops the CPU. In a real bootloader, this will not be
-; reached
-;
+    ;
+    ; Stage 1 passes us the drive number on the stack
+    ;
+    pop dx
+    mov [drive_number], dl
+
+    ;
+    ; Enable the A20 address line. This gives us access to slightly more memory now, but it is
+    ; necessary for 
+    ;
+    call enable_a20
+    jz .a20_enabled
+
+    ;
+    ; If we failed to enable A20, we cannot proceed
+    ;
+    PRINT err_failed_a20
+    jmp .hang
+
+.a20_enabled:
+
 .hang:
     cli
     hlt
     jmp $
 
-;
-; Imported functionality from lib files
-;
+drive_number:
+    db 0
+
 %include "lib/print.inc"
+%include "lib/a20.inc"
 
 ;
 ; Strings
 ;
 DEFSTRING msg_stage2, "Hello from stage 2!", NEWLINE
+DEFSTRING err_failed_a20, "BOOT ERROR: Failed to enable A20", NEWLINE
