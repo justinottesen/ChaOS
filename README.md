@@ -21,3 +21,7 @@ starting is the [x86_64 BIOS bootloader](./boot/x86_64/bios/stage1.asm).
 
 - For now, this is fully intended to be a solo project. I don't plan on accepting contributions.
 - I am currently only targeting x86_64.
+
+## Sources
+
+Pretty much all of the specific knowledge for this came from the [OSDev Wiki](https://wiki.osdev.org)

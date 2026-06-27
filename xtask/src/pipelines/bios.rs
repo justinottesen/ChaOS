@@ -10,6 +10,10 @@ const BOOT_SRC_DIR: &str = "boot/x86_64/bios";
 const STAGE1_SRC: &str = "stage1.asm";
 const STAGE2_SRC: &str = "stage2.asm";
 
+/// Workspace package and bare-metal target triple for the kernel build.
+const KERNEL_PKG: &str = "kernel";
+const KERNEL_TARGET: &str = "x86_64-unknown-none";
+
 const STAGE1: &str = "stage1.bin";
 const STAGE2: &str = "stage2.bin";
 const IMAGE: &str = "ChaOS.img";
@@ -24,14 +28,25 @@ pub struct Bios;
 impl Pipeline for Bios {
     fn build(&self, config: &Config) {
         // Figure out paths
-        let src_dir = config::repo_path(BOOT_SRC_DIR);
-        let _stage1_src_path = src_dir.join(STAGE1_SRC);
-        let stage2_src_path = src_dir.join(STAGE2_SRC);
+        let boot_src_dir = config::repo_path(BOOT_SRC_DIR);
+        let _stage1_src_path = boot_src_dir.join(STAGE1_SRC);
+        let stage2_src_path = boot_src_dir.join(STAGE2_SRC);
 
         let build_dir = config.build.resolved_build_dir();
         let stage1_bin_path = build_dir.join(STAGE1);
         let stage2_bin_path = build_dir.join(STAGE2);
         let image_path = build_dir.join(IMAGE);
+
+        println!("Building kernel");
+        let kernel_path = tools::cargo_build(
+            &config::repo_root(),
+            KERNEL_PKG,
+            KERNEL_TARGET,
+            config.build.profile,
+            &["core"],
+        );
+        let kernel_data = std::fs::read(&kernel_path)
+            .unwrap_or_else(|e| panic!("Failed to read kernel {}: {e}", kernel_path.display()));
 
         println!("Creating build dir: {build_dir:?}");
         std::fs::create_dir_all(&build_dir)
@@ -44,13 +59,16 @@ impl Pipeline for Bios {
             &[("STAGE2_LOAD_ADDR", BOOT_ADDR + SECTOR_SIZE as u64)],
         );
 
-        // Read stage 2 metadata
-        let stage2_data: Vec<u8> = std::fs::read(&stage2_bin_path)
+        let mut stage2_data: Vec<u8> = std::fs::read(&stage2_bin_path)
             .unwrap_or_else(|e| panic!("Failed to read stage 2: {e}"));
-        let stage2_sectors = (stage2_data.len()).div_ceil(SECTOR_SIZE);
-        println!("Stage 2 built ({stage2_sectors} sectors)");
+        stage2_data.resize(stage2_data.len().next_multiple_of(SECTOR_SIZE), 0);
+        let stage2_size = stage2_data.len();
+        assert!(
+            stage2_size % SECTOR_SIZE == 0,
+            "Stage 2 must be a clean number of sectors"
+        );
+        println!("Stage 2 built (size: {stage2_size})");
 
-        // Build stage 1
         println!("Building stage 1: {stage1_bin_path:?}");
         tools::nasm(
             &config::repo_path(BOOT_SRC_DIR).join(STAGE1_SRC),
@@ -58,7 +76,7 @@ impl Pipeline for Bios {
             &[
                 ("STAGE2_LOAD_ADDR", BOOT_ADDR + SECTOR_SIZE as u64),
                 ("BOOT_STACK_TOP", BOOT_ADDR),
-                ("STAGE2_SECTORS", stage2_sectors as u64),
+                ("STAGE2_SECTORS", (stage2_size / SECTOR_SIZE) as u64),
             ],
         );
 
@@ -73,22 +91,19 @@ impl Pipeline for Bios {
             "Boot sector missing magic signature"
         );
 
-        // Create boot image
         println!("Creating boot image {image_path:?}");
         let mut image = stage1_data;
-
-        let mut stage2_padded = stage2_data;
-        stage2_padded.resize(stage2_sectors * SECTOR_SIZE, 0);
-        image.extend(stage2_padded);
-        let image_size = image.len();
+        image.extend(stage2_data);
+        image.extend(kernel_data);
+        image.resize(image.len().next_multiple_of(SECTOR_SIZE), 0);
         assert!(
-            image_size % SECTOR_SIZE == 0,
-            "Stage 2 must be a clean number of sectors"
+            image.len() % SECTOR_SIZE == 0,
+            "Image must be a clean number of sectors"
         );
 
-        std::fs::write(&image_path, image)
+        std::fs::write(&image_path, &image)
             .unwrap_or_else(|e| panic!("Failed to create {IMAGE}: {e}"));
-        println!("Image size: {} bytes", image_size);
+        println!("Image size: {} bytes", image.len());
 
         // During the build, we validate the memory layout to ensure no overlaps
         let memory_validator = MemoryValidator::new(0x100000);
@@ -108,7 +123,7 @@ impl Pipeline for Bios {
         let _stage2 = claim(
             "Stage 2",
             BOOT_ADDR + SECTOR_SIZE as u64,
-            (stage2_sectors * SECTOR_SIZE) as u64,
+            stage2_size.next_multiple_of(SECTOR_SIZE) as u64,
         );
     }
 

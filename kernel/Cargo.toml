@@ -1,0 +1,15 @@
+[package]
+name = "kernel"
+edition.workspace = true
+version.workspace = true
+
+[[bin]]
+name = "kernel"
+test = false
+bench = false
+
+[dependencies]
+arch-iface = { version = "0.1.0", path = "../arch-iface" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+arch-x86_64 = { version = "0.1.0", path = "../arch/x86_64" }

@@ -79,6 +79,26 @@ pub enum Profile {
     Release,
 }
 
+impl Profile {
+    /// Extra args cargo needs to select this profile. The dev (`Debug`)
+    /// profile is cargo's default, so it needs none.
+    pub fn cargo_args(self) -> &'static [&'static str] {
+        match self {
+            Profile::Debug => &[],
+            Profile::Release => &["--release"],
+        }
+    }
+
+    /// The subdirectory cargo writes this profile's artifacts to under
+    /// `target/<triple>/`. Note the dev profile's dir is `debug`, not `dev`.
+    pub fn target_subdir(self) -> &'static str {
+        match self {
+            Profile::Debug => "debug",
+            Profile::Release => "release",
+        }
+    }
+}
+
 /// The repository root: the parent of the `xtask/` crate directory.
 ///
 /// `CARGO_MANIFEST_DIR` is baked in at compile time and points at the

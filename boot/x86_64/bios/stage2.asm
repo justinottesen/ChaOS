@@ -1,6 +1,21 @@
 ;
 ; Prepares the system for kernel execution and kicks it off
 ;
+; This involves a lot more steps than the first stage:
+;   1. Enable A20 - This is needed to access memory above 1MB. It is typically done by default on
+;       modern systems, older systems had it disabled for legacy compatability.
+;   2. Read the BIOS memory map - The BIOS tells us information about our system's memory. We will
+;       need to hand this off to the kernel.
+;   3. Load the kernel from disk - Similarly to how stage 1 loaded stage 2 from disk, stage 2 must
+;       load the kernel.
+;   4. Load the Global Descriptor Table - This tells the CPU how we are using different segments of
+;       memory, and is necessary for the next step.
+;   5. Jump to 32-bit protected mode - Pretty self explanatory
+;   6. Set up page tables - This is how the CPU resolves virtual addresses and is needed for 64-bit
+;       addressing.
+;   7. Jump to 64-bit long mode - Unlocks the full address space.
+;   8. Parse the kernel ELF and jump to it - Finally hands control over to the kernel.
+;
 
 ;
 ; Stage 1 hands us control in 16-bit real mode at STAGE2_LOAD_ADDR
@@ -16,7 +31,7 @@
 ;
 ; Our entry point, jumped to from stage 1
 ;
-start:
+stage2_16:
     PRINT msg_stage2
 ;
 ; This disables interrupts and infinitely loops the CPU. In a real bootloader, this will not be
