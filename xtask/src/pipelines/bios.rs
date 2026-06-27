@@ -20,8 +20,15 @@ const IMAGE: &str = "ChaOS.img";
 
 /// Address the BIOS loads the boot sector at
 const BOOT_ADDR: u64 = 0x7C00;
-// The size of one sector
+/// The size of one sector
 const SECTOR_SIZE: usize = 512;
+/// The start of the BIOS memory map entries
+const MEMORY_MAP_ENTRIES_ADDR: u64 = 0x4000;
+/// The size budget of the BIOS memory map entries
+const MEMORY_MAP_ENTRIES_END: u64 = 0x5000;
+/// The size of each memory map entry
+///     NOTE: This could be 20 or 24, using 24 for extended attributes
+const MEMORY_MAP_ENTRY_SIZE: u64 = 24;
 
 pub struct Bios;
 
@@ -56,7 +63,12 @@ impl Pipeline for Bios {
         tools::nasm(
             &stage2_src_path,
             &stage2_bin_path,
-            &[("STAGE2_LOAD_ADDR", BOOT_ADDR + SECTOR_SIZE as u64)],
+            &[
+                ("STAGE2_LOAD_ADDR", BOOT_ADDR + SECTOR_SIZE as u64),
+                ("MEMORY_MAP_ENTRIES_ADDR", MEMORY_MAP_ENTRIES_ADDR),
+                ("MEMORY_MAP_ENTRIES_END", MEMORY_MAP_ENTRIES_END),
+                ("MEMORY_MAP_ENTRY_SIZE", MEMORY_MAP_ENTRY_SIZE),
+            ],
         );
 
         let mut stage2_data: Vec<u8> = std::fs::read(&stage2_bin_path)
@@ -119,7 +131,11 @@ impl Pipeline for Bios {
         let _bios_reserved_high = claim("Video display & BIOS data", 0x80000, 0x100000 - 0x80000);
 
         // Set up stack & load stage 2
-        let _stack = claim("Stack", 0x501, BOOT_ADDR - 0x501);
+        let _stack = claim(
+            "Stack",
+            MEMORY_MAP_ENTRIES_END,
+            BOOT_ADDR - MEMORY_MAP_ENTRIES_END,
+        );
         let _stage2 = claim(
             "Stage 2",
             BOOT_ADDR + SECTOR_SIZE as u64,
@@ -130,9 +146,16 @@ impl Pipeline for Bios {
         memory_validator.set_max_address(0x10FFF0);
         {
             // Temporary addresses used to check if A20 is enabled
-            let check_a20_low = claim("Check A20 (wraparound)", 0x500, 1);
-            let check_a20_low = claim("Check A20 (high)", 0x100500, 1);
+            let _check_a20_low = claim("Check A20 (wraparound)", 0x500, 1);
+            let _check_a20_high = claim("Check A20 (high)", 0x100500, 1);
         }
+
+        // Read the BIOS memory map
+        let _bios_memory_map = claim(
+            "BIOS memory map",
+            MEMORY_MAP_ENTRIES_ADDR,
+            MEMORY_MAP_ENTRIES_END - MEMORY_MAP_ENTRIES_ADDR,
+        );
     }
 
     fn run(&self, config: &Config) {

@@ -49,6 +49,19 @@ stage2_16:
     jmp .hang
 
 .a20_enabled:
+    ;
+    ; Query the BIOS for the memory map
+    ;
+    call detect_memory
+    jnc .mem_map_loaded
+
+    ;
+    ; Can't continue if we fail to load the memory map
+    ;
+    PRINT err_failed_mmap
+    jmp .hang
+
+.mem_map_loaded:
 
 .hang:
     cli
@@ -60,9 +73,11 @@ drive_number:
 
 %include "lib/print.inc"
 %include "lib/a20.inc"
+%include "lib/mmap.inc"
 
 ;
 ; Strings
 ;
 DEFSTRING msg_stage2, "Hello from stage 2!", NEWLINE
 DEFSTRING err_failed_a20, "BOOT ERROR: Failed to enable A20", NEWLINE
+DEFSTRING err_failed_mmap, "BOOT ERROR: Failed to read the memory map", NEWLINE
