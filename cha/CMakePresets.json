@@ -1,0 +1,9 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "clang",
+            "binaryDir": "${sourceDir}/build/"
+        }
+    ]
+}
