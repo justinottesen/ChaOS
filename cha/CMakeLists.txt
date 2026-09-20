@@ -11,4 +11,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(cha)
-target_sources(cha PRIVATE src/main.cpp)
+target_sources(cha PRIVATE
+    src/main.cpp
+    src/error.cpp
+)
